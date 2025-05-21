@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Quiz Game - Levels</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #a18cd1, #fbc2eb);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      color: #fff;
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      border-radius: 1rem;
+      text-align: center;
+      max-width: 700px;
+      width: 95%;
+      margin-top: 2rem;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+    .game-area {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      margin-bottom: 1rem;
+      background: #222;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+    .hero, .villain, .bullet, .broken-bullet {
+      position: absolute;
+      bottom: 0;
+    }
+    .hero {
+      left: 20px;
+      width: 100px;
+    }
+    .hurt-hero {
+      left: 20px;
+      width: 100px;
+      display: none;
+    }
+    .villain {
+      right: 20px;
+      width: 100px;
+    }
+    .bullet {
+      width: 30px;
+      left: 120px;
+      bottom: 100px;
+    }
+    .broken-bullet {
+      width: 30px;
+      bottom: 100px;
+      display: none;
+    }
+    .question {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .info {
+      margin: 1rem 0;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin: 0.3rem;
+      border-radius: 0.5rem;
+      border: none;
+    }
+    button {
+      background-color: #ff8ae2;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #timer {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Math Quiz Hero</h2>
+    <div class="game-area">
+      <img src="hero.png" class="hero" id="hero" />
+      <img src="hero-hurt.png" class="hurt-hero" id="heroHurt" />
+      <img src="villain1.png" class="villain" id="villain" />
+      <img src="bullet.png" class="bullet" id="bullet" />
+      <img src="broken-bullet.png" class="broken-bullet" id="brokenBullet" />
+    </div>
+    <div class="info">
+      <p>Level: <span id="level">1</span> | Score: <span id="score">0</span> | Hearts: <span id="hearts">5</span> | Timer: <span id="timer">10</span></p>
+    </div>
+    <div class="question" id="question">Press Start to Begin</div>
+    <input type="text" id="answerInput" placeholder="Answer here" />
+    <button onclick="submitAnswer()">Submit</button>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <script>
+    const villains = ["villain1.png", "villain2.png", "villain3.png", "villain4.png", "villain5.png"];
+    const hero = document.getElementById("hero");
+    const heroHurt = document.getElementById("heroHurt");
+    const bullet = document.getElementById("bullet");
+    const brokenBullet = document.getElementById("brokenBullet");
+    const villainImg = document.getElementById("villain");
+
+    let level = 1;
+    let score = 0;
+    let hearts = 5;
+    let villainHealth = 20;
+    let currentQuestion = null;
+    let timer;
+    let timeLeft = 10;
+
+    function startGame() {
+      level = 1;
+      score = 0;
+      hearts = 6 - level;
+      villainHealth = 20 * level;
+      document.getElementById("level").textContent = level;
+      document.getElementById("score").textContent = score;
+      document.getElementById("hearts").textContent = hearts;
+      villainImg.src = villains[level - 1];
+      showQuestion();
+    }
+
+    function showQuestion() {
+      currentQuestion = generateQuestion();
+      document.getElementById("question").textContent = currentQuestion.q;
+      document.getElementById("answerInput").value = "";
+      timeLeft = 10;
+      document.getElementById("timer").textContent = timeLeft;
+      bullet.style.left = "120px";
+      bullet.style.display = "block";
+      brokenBullet.style.display = "none";
+      moveBullet();
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          handleAnswer("");
+        }
+      }, 1000);
+    }
+
+    function generateQuestion() {
+      const types = ["table", "square", "cube", "revCube"];
+      const type = types[Math.floor(Math.random() * types.length)];
+      let q, a;
+      switch(type) {
+        case "table":
+          const t = [1,2,3,4,5,6,7,8,9,10,11,12,13,17,19,23,29];
+          let base = t[Math.floor(Math.random() * t.length)];
+          let mul = Math.floor(Math.random() * 13) + 1;
+          q = `${base} x ${mul}`;
+          a = (base * mul).toString();
+          break;
+        case "square":
+          let n1 = Math.floor(Math.random() * 50) + 1;
+          q = `${n1}²`;
+          a = (n1 * n1).toString();
+          break;
+        case "cube":
+          let n2 = Math.floor(Math.random() * 30) + 1;
+          q = `${n2}³`;
+          a = (n2 * n2 * n2).toString();
+          break;
+        case "revCube":
+          let base2 = Math.floor(Math.random() * 30) + 1;
+          q = `${base2 * base2 * base2} is the cube of?`;
+          a = base2.toString();
+          break;
+      }
+      return { q, a };
+    }
+
+    function submitAnswer() {
+      clearInterval(timer);
+      const ans = document.getElementById("answerInput").value.trim();
+      handleAnswer(ans);
+    }
+
+    function handleAnswer(ans) {
+      if (ans === currentQuestion.a) {
+        score++;
+        villainHealth--;
+        document.getElementById("score").textContent = score;
+        brokenBullet.style.display = "block";
+        bullet.style.display = "none";
+      } else {
+        hearts--;
+        document.getElementById("hearts").textContent = hearts;
+        hero.style.display = "none";
+        heroHurt.style.display = "block";
+        setTimeout(() => {
+          hero.style.display = "block";
+          heroHurt.style.display = "none";
+        }, 1000);
+      }
+      if (villainHealth <= 0) {
+        if (level < 5) {
+          level++;
+          startGame();
+        } else {
+          alert("You defeated all villains! Game over.");
+        }
+      } else if (hearts <= 0) {
+        alert("Game Over! Try again.");
+      } else {
+        showQuestion();
+      }
+    }
+
+    function moveBullet() {
+      bullet.animate([
+        { left: "120px" },
+        { left: "120px", offset: 0.1 },
+        { left: "70%" }
+      ], {
+        duration: 10000,
+        fill: "forwards"
+      });
+    }
+  </script>
+</body>
+</html>
