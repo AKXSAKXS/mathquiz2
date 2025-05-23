@@ -2,238 +2,370 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>Math Quiz Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Math Quiz Game - Levels</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: sans-serif;
       background: linear-gradient(to right, #a18cd1, #fbc2eb);
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       min-height: 100vh;
-      color: #fff;
     }
-    .container {
-      background: rgba(0, 0, 0, 0.5);
-      padding: 1rem;
-      border-radius: 1rem;
-      text-align: center;
-      max-width: 700px;
-      width: 95%;
-      margin-top: 2rem;
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-    }
-    .game-area {
-      position: relative;
+
+    .game-container {
+      max-width: 800px;
       width: 100%;
-      height: 300px;
+      background: #ffffff10;
+      border-radius: 1rem;
+      padding: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    .animation-area {
+      position: relative;
+      height: 256px;
+      width: 100%;
       margin-bottom: 1rem;
       background: #222;
-      border-radius: 1rem;
       overflow: hidden;
+      border-radius: 1rem;
     }
-    .hero, .villain, .bullet, .broken-bullet {
+
+    .sprite {
       position: absolute;
+      width: 256px;
+      height: 256px;
+      background-image: url('images.png');
+      background-size: 768px 768px;
+    }
+
+    .hero {
+      background-position: 0px 0px;
+      left: 0;
+      bottom: 0;
+      transition: transform 0.3s ease;
+    }
+
+    .hero.hurt {
+      background-position: 0px -465px;
+    }
+
+    .hero.parry {
+      transform: scale(1.1) rotate(-5deg);
+    }
+
+    .villain {
+      right: 0;
+      background-position: -512px 0px;
       bottom: 0;
     }
-    .hero {
-      left: 20px;
-      width: 100px;
+
+    .villain.level2 { background-position: -512px -450px; }
+    .villain.level3 { background-position: -280px -400px; }
+    .villain.level4 { background-position: -512px 0px; }
+    .villain.level5 { background-position: -512px -450px; }
+
+    .villain.shake {
+      animation: shake 0.3s ease-in-out;
     }
-    .hurt-hero {
-      left: 20px;
-      width: 100px;
-      display: none;
+
+    .villain.defeated {
+      background-position: -512px -640px;
     }
-    .villain {
-      right: 20px;
-      width: 100px;
+
+    @keyframes shake {
+      0% { transform: translate(0px, 0px); }
+      20% { transform: translate(-5px, 0px); }
+      40% { transform: translate(5px, 0px); }
+      60% { transform: translate(-5px, 0px); }
+      80% { transform: translate(5px, 0px); }
+      100% { transform: translate(0px, 0px); }
     }
+
     .bullet {
-      width: 30px;
-      left: 120px;
-      bottom: 100px;
+      background-position: -260px 0px;
+      top: 96px;
+      left: 256px;
+      width: 64px;
+      height: 64px;
+      transition: left 10s linear;
+       background-size: 192px 192px;
     }
-    .broken-bullet {
-      width: 30px;
-      bottom: 100px;
+
+    .bullet.broken {
+      background-position: -256px -240px;
+    }
+
+    .hidden {
       display: none;
     }
-    .question {
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
+
+    .quiz-area {
+      text-align: center;
     }
-    .info {
-      margin: 1rem 0;
+
+    .info-bar {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 1rem;
     }
-    input, button {
+
+    .level-select-screen {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    input, button, select {
       padding: 0.5rem;
       font-size: 1rem;
-      margin: 0.3rem;
+      margin: 0.5rem;
       border-radius: 0.5rem;
       border: none;
     }
+
     button {
       background-color: #ff8ae2;
       color: white;
       font-weight: bold;
       cursor: pointer;
     }
-    #timer {
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Math Quiz Hero</h2>
-    <div class="game-area">
-      <img src="hero.png" class="hero" id="hero" />
-      <img src="hero-hurt.png" class="hurt-hero" id="heroHurt" />
-      <img src="villain1.png" class="villain" id="villain" />
-      <img src="bullet.png" class="bullet" id="bullet" />
-      <img src="broken-bullet.png" class="broken-bullet" id="brokenBullet" />
+  <audio id="correctSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+  <audio id="wrongSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
+
+  <div id="levelScreen" class="level-select-screen">
+    <h2>Select a Level</h2>
+    <div id="levelButtons"></div>
+  </div>
+
+  <div id="gameContainer" class="game-container hidden">
+    <div class="animation-area">
+      <div id="hero" class="sprite hero"></div>
+      <div id="bullet" class="sprite bullet hidden"></div>
+      <div id="villain" class="sprite villain"></div>
     </div>
-    <div class="info">
-      <p>Level: <span id="level">1</span> | Score: <span id="score">0</span> | Hearts: <span id="hearts">5</span> | Timer: <span id="timer">10</span></p>
+
+    <div class="quiz-area">
+      <div class="info-bar">
+        <p><strong>Level:</strong> <span id="level">1</span></p>
+        <p><strong>Score:</strong> <span id="score">0</span></p>
+        <p><strong>Hero Health:</strong> <span id="heroHealth">5</span></p>
+        <p><strong>Villain HP:</strong> <span id="villainHP">20</span></p>
+        <p><strong>Timer:</strong> <span id="timer">15</span>s</p>
+      </div>
+      <div class="question" id="question"></div>
+      <input type="text" id="answerInput" placeholder="Your answer" inputmode="numeric" pattern="[0-9]*" />
+      <button onclick="submitAnswer()">Submit</button>
+      <div id="result" class="result"></div>
     </div>
-    <div class="question" id="question">Press Start to Begin</div>
-    <input type="text" id="answerInput" placeholder="Answer here" />
-    <button onclick="submitAnswer()">Submit</button>
-    <button onclick="startGame()">Start Game</button>
   </div>
 
   <script>
-    const villains = ["villain1.png", "villain2.png", "villain3.png", "villain4.png", "villain5.png"];
-    const hero = document.getElementById("hero");
-    const heroHurt = document.getElementById("heroHurt");
-    const bullet = document.getElementById("bullet");
-    const brokenBullet = document.getElementById("brokenBullet");
-    const villainImg = document.getElementById("villain");
-
     let level = 1;
     let score = 0;
-    let hearts = 5;
-    let villainHealth = 20;
-    let currentQuestion = null;
-    let timer;
-    let timeLeft = 10;
+    let heroHealth = 5;
+    let villainHP = 20;
+    let currentQuestion;
+    let timer, timeLeft;
+    const unlockedLevels = JSON.parse(localStorage.getItem('unlockedLevels') || '[1]');
 
-    function startGame() {
-      level = 1;
-      score = 0;
-      hearts = 6 - level;
-      villainHealth = 20 * level;
-      document.getElementById("level").textContent = level;
-      document.getElementById("score").textContent = score;
-      document.getElementById("hearts").textContent = hearts;
-      villainImg.src = villains[level - 1];
-      showQuestion();
-    }
+    const levelScreen = document.getElementById('levelScreen');
+    const gameContainer = document.getElementById('gameContainer');
+    const hero = document.getElementById('hero');
+    const bullet = document.getElementById('bullet');
+    const villain = document.getElementById('villain');
+    const questionEl = document.getElementById('question');
+    const scoreEl = document.getElementById('score');
+    const heroHealthEl = document.getElementById('heroHealth');
+    const villainHPEl = document.getElementById('villainHP');
+    const levelEl = document.getElementById('level');
+    const resultEl = document.getElementById('result');
+    const timerEl = document.getElementById('timer');
+    const answerInput = document.getElementById('answerInput');
 
-    function showQuestion() {
-      currentQuestion = generateQuestion();
-      document.getElementById("question").textContent = currentQuestion.q;
-      document.getElementById("answerInput").value = "";
-      timeLeft = 10;
-      document.getElementById("timer").textContent = timeLeft;
-      bullet.style.left = "120px";
-      bullet.style.display = "block";
-      brokenBullet.style.display = "none";
-      moveBullet();
-      clearInterval(timer);
-      timer = setInterval(() => {
-        timeLeft--;
-        document.getElementById("timer").textContent = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          handleAnswer("");
-        }
-      }, 1000);
-    }
+    const correctSound = document.getElementById('correctSound');
+    const wrongSound = document.getElementById('wrongSound');
 
-    function generateQuestion() {
-      const types = ["table", "square", "cube", "revCube"];
-      const type = types[Math.floor(Math.random() * types.length)];
-      let q, a;
-      switch(type) {
-        case "table":
-          const t = [1,2,3,4,5,6,7,8,9,10,11,12,13,17,19,23,29];
-          let base = t[Math.floor(Math.random() * t.length)];
-          let mul = Math.floor(Math.random() * 13) + 1;
-          q = `${base} x ${mul}`;
-          a = (base * mul).toString();
-          break;
-        case "square":
-          let n1 = Math.floor(Math.random() * 50) + 1;
-          q = `${n1}²`;
-          a = (n1 * n1).toString();
-          break;
-        case "cube":
-          let n2 = Math.floor(Math.random() * 30) + 1;
-          q = `${n2}³`;
-          a = (n2 * n2 * n2).toString();
-          break;
-        case "revCube":
-          let base2 = Math.floor(Math.random() * 30) + 1;
-          q = `${base2 * base2 * base2} is the cube of?`;
-          a = base2.toString();
-          break;
+    answerInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitAnswer();
       }
-      return { q, a };
+    });
+
+    function buildLevelButtons() {
+      const container = document.getElementById('levelButtons');
+      container.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = `Level ${i}`;
+        btn.disabled = !unlockedLevels.includes(i);
+        btn.onclick = () => {
+          level = i;
+          levelScreen.classList.add('hidden');
+          gameContainer.classList.remove('hidden');
+          startLevel();
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    function getQuestionPool() {
+      const questions = [];
+      const tableNumbers = [...Array.from({ length: 13 }, (_, i) => i + 1), 17, 19, 23, 29];
+      tableNumbers.forEach(i => {
+        for (let j = 1; j <= 10; j++) {
+          questions.push({ q: `${i} x ${j}`, a: (i * j).toString() });
+        }
+      });
+      for (let i = 1; i <= 50; i++) {
+        questions.push({ q: `${i}²`, a: (i * i).toString() });
+        questions.push({ q: `${i * i} is the square of`, a: `${i}` });
+      }
+      for (let i = 1; i <= 30; i++) {
+        const cube = i * i * i;
+        questions.push({ q: `${i}³`, a: cube.toString() });
+        questions.push({ q: `${cube} is the cube of`, a: `${i}` });
+      }
+      return questions;
+    }
+
+    // function nextQuestion() {
+    //   const questions = getQuestionPool();
+    //   currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+    //   questionEl.textContent = currentQuestion.q;
+    //   answerInput.value = '';
+    //   resultEl.textContent = '';
+    //   shootBullet();
+    //   timeLeft = 10;
+    //   timerEl.textContent = timeLeft;
+    //   clearInterval(timer);
+    //   timer = setInterval(() => {
+    //     timeLeft--;
+    //     timerEl.textContent = timeLeft;
+    //     if (timeLeft === 0) {
+    //       clearInterval(timer);
+    //       handleAnswer('');
+    //     }
+    //   }, 1000);
+    // }
+    function nextQuestion() {
+  const questions = getQuestionPool();
+  currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+  questionEl.textContent = currentQuestion.q;
+  answerInput.value = '';
+  resultEl.textContent = '';
+
+  // Reset bullet before shooting
+  bullet.classList.add('hidden');
+  bullet.classList.remove('broken');
+  bullet.style.transition = 'none'; // disable transition temporarily
+  bullet.style.left = '256px';       // reset to starting position
+
+  // Force reflow so the reset position takes effect before animation
+  void bullet.offsetWidth;
+
+  // Re-enable transition for animation
+  bullet.style.transition = 'left 15s linear';
+
+  // Shoot the bullet
+  shootBullet();
+
+  timeLeft = 15;
+  timerEl.textContent = timeLeft;
+  clearInterval(timer);
+  timer = setInterval(() => {
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    if (timeLeft === 0) {
+      clearInterval(timer);
+      handleAnswer('');
+    }
+  }, 1000);
+}
+
+
+    function shootBullet() {
+      bullet.classList.remove('hidden', 'broken');
+      bullet.style.left = '500px';
+      void bullet.offsetWidth;
+      bullet.style.left = '200px';
     }
 
     function submitAnswer() {
+      const answer = answerInput.value.trim();
+      if (answer === '') return;
       clearInterval(timer);
-      const ans = document.getElementById("answerInput").value.trim();
-      handleAnswer(ans);
+      handleAnswer(answer);
     }
 
-    function handleAnswer(ans) {
-      if (ans === currentQuestion.a) {
+    function handleAnswer(answer) {
+      if (answer === currentQuestion.a) {
+        correctSound.play();
+        resultEl.textContent = "✅ Correct!";
         score++;
-        villainHealth--;
-        document.getElementById("score").textContent = score;
-        brokenBullet.style.display = "block";
-        bullet.style.display = "none";
-      } else {
-        hearts--;
-        document.getElementById("hearts").textContent = hearts;
-        hero.style.display = "none";
-        heroHurt.style.display = "block";
+        scoreEl.textContent = score;
+        hero.classList.add('parry');
+        setTimeout(() => hero.classList.remove('parry'), 500);
+        bullet.classList.add('broken');
+        bullet.style.left = '128px';
+        villain.classList.add('shake');
+        setTimeout(() => villain.classList.remove('shake'), 300);
         setTimeout(() => {
-          hero.style.display = "block";
-          heroHurt.style.display = "none";
+          bullet.classList.add('hidden');
+          villainHP--;
+          villainHPEl.textContent = villainHP;
+          if (villainHP <= 0) {
+            villain.classList.add('defeated');
+            if (!unlockedLevels.includes(level + 1) && level < 5) {
+              unlockedLevels.push(level + 1);
+              localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+            }
+            setTimeout(() => {
+              alert("Level Completed!");
+              location.reload();
+            }, 1500);
+          } else {
+            nextQuestion();
+          }
         }, 1000);
-      }
-      if (villainHealth <= 0) {
-        if (level < 5) {
-          level++;
-          startGame();
-        } else {
-          alert("You defeated all villains! Game over.");
-        }
-      } else if (hearts <= 0) {
-        alert("Game Over! Try again.");
       } else {
-        showQuestion();
+        wrongSound.play();
+        resultEl.textContent = `❌ Incorrect! Answer: ${currentQuestion.a}`;
+        hero.classList.add('hurt');
+        bullet.classList.add('hidden');
+        heroHealth--;
+        heroHealthEl.textContent = heroHealth;
+        setTimeout(() => hero.classList.remove('hurt'), 1000);
+        if (heroHealth <= 0) {
+          alert("Game Over!");
+          location.reload();
+        } else {
+          nextQuestion();
+        }
       }
     }
 
-    function moveBullet() {
-      bullet.animate([
-        { left: "120px" },
-        { left: "120px", offset: 0.1 },
-        { left: "70%" }
-      ], {
-        duration: 10000,
-        fill: "forwards"
-      });
+    function startLevel() {
+      levelEl.textContent = level;
+      villain.className = 'sprite villain level' + level;
+      villainHP = 20 * level;
+      heroHealth = 6 - level;
+      heroHealthEl.textContent = heroHealth;
+      villainHPEl.textContent = villainHP;
+      score = 0;
+      scoreEl.textContent = score;
+      nextQuestion();
     }
+
+    window.onload = () => {
+      buildLevelButtons();
+    };
   </script>
 </body>
 </html>
