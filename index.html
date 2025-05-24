@@ -165,7 +165,11 @@
       <div id="result" class="result"></div>
     </div>
   </div>
-
+ <div id="leaderboard" class="hidden">
+    <h2>Leaderboard</h2>
+    <ul id="leaderboardList"></ul>
+    <button onclick="restartGame()">Play Again</button>
+  </div>
   <script>
     let level = 1;
     let score = 0;
@@ -197,6 +201,13 @@
         submitAnswer();
       }
     });
+ let username = prompt("Enter your name to start:");
+
+    // Add username display
+    const infoBar = document.querySelector('.info-bar');
+    const userTag = document.createElement('p');
+    userTag.innerHTML = `<strong>Player:</strong> ${username}`;
+    infoBar.insertBefore(userTag, infoBar.firstChild);
 
     function buildLevelButtons() {
       const container = document.getElementById('levelButtons');
@@ -304,7 +315,7 @@
       handleAnswer(answer);
     }
 
-    function handleAnswer(answer) {
+    /*function handleAnswer(answer) {
       if (answer === currentQuestion.a) {
         correctSound.play();
         resultEl.textContent = "✅ Correct!";
@@ -349,8 +360,110 @@
           nextQuestion();
         }
       }
+    }*/
+ /*  function handleAnswer(answer) {
+  if (answer === currentQuestion.a) {
+    correctSound.play();
+    resultEl.textContent = "✅ Correct!";
+    score++;
+    scoreEl.textContent = score;
+    hero.classList.add('parry');
+    setTimeout(() => hero.classList.remove('parry'), 500);
+    bullet.classList.add('broken');
+    bullet.style.left = '128px';
+    villain.classList.add('shake');
+    setTimeout(() => villain.classList.remove('shake'), 300);
+    setTimeout(() => {
+      bullet.classList.add('hidden');
+      villainHP--;
+      villainHPEl.textContent = villainHP;
+
+      if (villainHP <= 0) {
+        villain.classList.add('defeated');
+        unlockNextLevel();
+        setTimeout(() => {
+          alert('🎉 You defeated the villain! Moving to level select.');
+          location.reload();
+        }, 1500);
+      } else {
+        nextQuestion();
+      }
+    }, 400);
+  } else {
+    wrongSound.play();
+    resultEl.textContent = "❌ Wrong!";
+    hero.classList.add('hurt');
+    setTimeout(() => hero.classList.remove('hurt'), 500);
+    bullet.classList.add('hidden');
+    heroHealth--;
+    heroHealthEl.textContent = heroHealth;
+
+    if (heroHealth <= 0) {
+      setTimeout(() => {
+        showGameOverScreen();
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        nextQuestion();
+      }, 400);
+    }
+  }
+}*/
+ function handleAnswer(answer) {
+      if (answer === currentQuestion.a) {
+        correctSound.play();
+        resultEl.textContent = "✅ Correct!";
+        score++;
+        scoreEl.textContent = score;
+        hero.classList.add('parry');
+        setTimeout(() => hero.classList.remove('parry'), 500);
+        bullet.classList.add('broken');
+        bullet.style.left = '128px';
+        villain.classList.add('shake');
+        setTimeout(() => villain.classList.remove('shake'), 300);
+        setTimeout(() => {
+          bullet.classList.add('hidden');
+          villainHP--;
+          villainHPEl.textContent = villainHP;
+          if (villainHP <= 0) {
+            gameOver(true);
+          } else {
+            nextQuestion();
+          }
+        }, 500);
+      } else {
+        wrongSound.play();
+        resultEl.textContent = "❌ Wrong!";
+        hero.classList.add('hurt');
+        setTimeout(() => hero.classList.remove('hurt'), 500);
+        heroHealth--;
+        heroHealthEl.textContent = heroHealth;
+        if (heroHealth <= 0) {
+          gameOver(false);
+        } else {
+          nextQuestion();
+        }
+      }
     }
 
+ function gameOver(won) {
+      gameContainer.classList.add('hidden');
+      const leaderboard = document.getElementById('leaderboard');
+      const list = document.getElementById('leaderboardList');
+      leaderboard.classList.remove('hidden');
+
+      // Save to localStorage leaderboard
+      const scores = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+      scores.push({ name: username, score: score });
+      scores.sort((a, b) => b.score - a.score);
+      localStorage.setItem('leaderboard', JSON.stringify(scores.slice(0, 10)));
+
+      list.innerHTML = scores.slice(0, 10).map(s => `<li>${s.name}: ${s.score}</li>`).join('');
+    }
+
+    function restartGame() {
+      location.reload();
+    }
     function startLevel() {
       levelEl.textContent = level;
       villain.className = 'sprite villain level' + level;
@@ -363,9 +476,35 @@
       nextQuestion();
     }
 
+    function showGameOverScreen() {
+  gameContainer.classList.add('hidden');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const finalScore = document.getElementById('finalScore');
+  finalScore.textContent = score;
+  gameOverScreen.classList.remove('hidden');
+}
+
+function restartGame() {
+  location.reload();
+}
+
+function unlockNextLevel() {
+  if (!unlockedLevels.includes(level + 1) && level < 5) {
+    unlockedLevels.push(level + 1);
+    localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+  }
+}
+
+
     window.onload = () => {
       buildLevelButtons();
     };
   </script>
+  <div id="gameOverScreen" class="level-select-screen hidden">
+  <h2>💀 Game Over!</h2>
+  <p>Your score: <span id="finalScore"></span></p>
+  <button onclick="restartGame()">Try Again</button>
+</div>
+
 </body>
 </html>
